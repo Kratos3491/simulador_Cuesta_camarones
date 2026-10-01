@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación Cuesta de Camarones - Control de Semáforos</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-up: #10b981;
+            --accent-down: #f97316;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: #38bdf8;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            color: #94a3b8;
+        }
+
+        .controls-hint {
+            background-color: #1e293b;
+            border: 1px solid #38bdf8;
+            border-radius: 8px;
+            padding: 8px 16px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            display: inline-flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .kbd {
+            background-color: #334155;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #64748b;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 420px 360px;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        @media (max-width: 950px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel h2 {
+            font-size: 1.1rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+            color: #f1f5f9;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-up {
+            background-color: var(--accent-up);
+            color: #022c22;
+        }
+
+        .btn-up:hover {
+            background-color: #34d399;
+        }
+
+        .btn-down {
+            background-color: var(--accent-down);
+            color: #431407;
+        }
+
+        .btn-down:hover {
+            background-color: #fb923c;
+        }
+
+        .btn-secondary {
+            background-color: #334155;
+            color: #f8fafc;
+        }
+
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+
+        .road-container {
+            position: relative;
+            height: 600px;
+            background-color: #1e293b;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .traffic-zone {
+            width: 100%;
+            background-color: #0f172a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border: 1px solid #334155;
+            gap: 8px;
+        }
+
+        .traffic-zone-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .light-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .light {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: #475569;
+            box-shadow: inset 0 0 4px #000;
+        }
+
+        .light.green {
+            background-color: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        .light.red {
+            background-color: #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+        }
+
+        .queue-badge {
+            background-color: #334155;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .visual-queue {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap; 
+            padding: 6px 4px;
+            min-height: 44px;
+            background-color: #182234;
+            border-radius: 6px;
+            border: 1px dashed #334155;
+            align-items: center;
+        }
+
+        .visual-queue-empty {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-style: italic;
+            width: 100%;
+            text-align: center;
+        }
+
+        .queued-car {
+            min-width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            flex-shrink: 0;
+            /* Animación eliminada para evitar el parpadeo en las filas */
+        }
+
+        .queued-car.up {
+            background: linear-gradient(180deg, #059669, #10b981);
+            border: 1px solid #34d399;
+        }
+
+        .queued-car.down {
+            background: linear-gradient(180deg, #ea580c, #f97316);
+            border: 1px solid #fb923c;
+        }
+
+        .single-lane {
+            position: relative;
+            width: 100px;
+            height: 330px;
+            background-color: #334155;
+            border-left: 4px dashed #f59e0b;
+            border-right: 4px dashed #f59e0b;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+
+        .lane-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 1rem;
+            font-weight: 800;
+            white-space: nowrap;
+            letter-spacing: 2px;
+            pointer-events: none;
+        }
+
+        .car-sprite {
+            position: absolute;
+            width: 38px;
+            height: 50px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .car-sprite.up {
+            background: linear-gradient(180deg, #059669, #10b981);
+            border: 2px solid #34d399;
+        }
+
+        .car-sprite.down {
+            background: linear-gradient(180deg, #ea580c, #f97316);
+            border: 2px solid #fb923c;
+        }
+
+        .metric-card {
+            background-color: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .metric-title {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #38bdf8;
+            margin-top: 2px;
+        }
+
+        .log-container {
+            height: 240px;
+            background-color: #0f172a;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            padding: 10px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.78rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-entry {
+            line-height: 1.3;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 4px;
+        }
+
+        .log-time { color: #64748b; }
+        .log-up { color: #34d399; }
+        .log-down { color: #fb923c; }
+        .log-system { color: #38bdf8; }
+        .log-warn { color: #facc15; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>⛰️ Simulación: Cuesta de Camarones</h1>
+        <p>Control de Tránsito por Semáforos - Máximo estricto de 15 autos por turno</p>
+        <div class="controls-hint">
+            <span>Teclado: <span class="kbd">S</span> o <span class="kbd">↑</span> para <strong>SUBIR</strong></span>
+            <span>|</span>
+            <span><span class="kbd">B</span> o <span class="kbd">↓</span> para <strong>BAJAR</strong></span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Panel de Controles -->
+        <div class="panel">
+            <h2>🎮 Generador de Vehículos</h2>
+            <div class="btn-group">
+                <button class="btn btn-up" onclick="agregarAuto('SUBIR')">
+                    ⬆️ Generar Auto (Subir) [Tecla S / ↑]
+                </button>
+                <button class="btn btn-down" onclick="agregarAuto('BAJAR')">
+                    ⬇️ Generar Auto (Bajar) [Tecla B / ↓]
+                </button>
+                <hr style="border-color: var(--border-color)">
+                <button class="btn btn-secondary" onclick="generarRafaga('SUBIR', 15)">
+                    🚀 Ráfaga 15 Autos (Subir)
+                </button>
+                <button class="btn btn-secondary" onclick="generarRafaga('BAJAR', 15)">
+                    🚀 Ráfaga 15 Autos (Bajar)
+                </button>
+                <button class="btn btn-danger" onclick="reiniciarSimulacion()">
+                    🔄 Reiniciar Todo
+                </button>
+            </div>
+
+            <div class="slider-group">
+                <label for="speedSlider">⏱️ Tiempo de Cruce: <span id="speedVal">3.0</span>s</label>
+                <input type="range" id="speedSlider" min="1" max="6" step="0.5" value="3" oninput="actualizarVelocidad(this.value)">
+            </div>
+        </div>
+
+        <!-- Pista Visual, Fila y Semáforos -->
+        <div class="road-container">
+            <div class="traffic-zone">
+                <div class="traffic-zone-header">
+                    <div class="light-box">
+                        <div id="lightDown" class="light red"></div>
+                        <span>Semáforo BAJAR</span>
+                    </div>
+                    <div class="queue-badge">
+                        En Fila Norte: <strong id="valEspBajando">0</strong>
+                    </div>
+                </div>
+                <div class="visual-queue" id="visualQueueDown">
+                    <span class="visual-queue-empty">Sin autos en espera</span>
+                </div>
+            </div>
+
+            <div class="single-lane" id="roadTrack">
+                <div class="lane-label">CUESTA CAMARONES</div>
+            </div>
+
+            <div class="traffic-zone">
+                <div class="visual-queue" id="visualQueueUp">
+                    <span class="visual-queue-empty">Sin autos en espera</span>
+                </div>
+                <div class="traffic-zone-header">
+                    <div class="light-box">
+                        <div id="lightUp" class="light red"></div>
+                        <span>Semáforo SUBIR</span>
+                    </div>
+                    <div class="queue-badge">
+                        En Fila Sur: <strong id="valEspSubiendo">0</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard y Bitácora -->
+        <div class="panel">
+            <h2>📊 Estado del Sistema</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="metric-card">
+                    <div class="metric-title">En Tramo</div>
+                    <div class="metric-value" id="valAutosEnTramo">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Sentido Activo</div>
+                    <div class="metric-value" id="valSentidoActivo" style="font-size:1rem;">NINGUNO</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Consec. Subir</div>
+                    <div class="metric-value" id="valConsecSubiendo">0 / 15</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Consec. Bajar</div>
+                    <div class="metric-value" id="valConsecBajando">0 / 15</div>
+                </div>
+            </div>
+
+            <h2>📝 Bitácora de Eventos</h2>
+            <div class="log-container" id="logBox"></div>
+        </div>
+    </div>
+
+    <script>
+        let cantSubiendo = 0;
+        let cantBajando = 0;
+        let espSubiendo = [];
+        let espBajando = [];
+        let consecSubiendo = 0;
+        let consecBajando = 0;
+
+        let autoIdCounter = 1;
+        let tiempoCruceMs = 3000;
+        let ingresoBloqueado = false; 
+
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            const key = e.key.toLowerCase();
+            if (key === 's' || e.key === 'ArrowUp') { e.preventDefault(); agregarAuto('SUBIR'); } 
+            else if (key === 'b' || e.key === 'ArrowDown') { e.preventDefault(); agregarAuto('BAJAR'); }
+        });
+
+        function agregarAuto(direccion) {
+            const auto = { id: autoIdCounter++, direccion: direccion };
+            if (direccion === 'SUBIR') {
+                espSubiendo.push(auto);
+                logEvent(`➕ Auto #${auto.id} llegó a la fila Sur (SUBIR).`, 'log-up');
+            } else {
+                espBajando.push(auto);
+                logEvent(`➕ Auto #${auto.id} llegó a la fila Norte (BAJAR).`, 'log-down');
+            }
+            actualizarUI();
+            evaluarPaso();
+        }
+
+        function generarRafaga(direccion, cantidad) {
+            logEvent(`⚡ Generando ráfaga de ${cantidad} autos [${direccion}]...`, 'log-system');
+            for (let i = 0; i < cantidad; i++) {
+                const auto = { id: autoIdCounter++, direccion: direccion };
+                if (direccion === 'SUBIR') espSubiendo.push(auto);
+                else espBajando.push(auto);
+            }
+            actualizarUI();
+            evaluarPaso();
+        }
+
+        // --- Algoritmo Principal de Control ---
+        function evaluarPaso() {
+            if (ingresoBloqueado) return; 
+
+            // Si la pista está totalmente vacía, evaluamos si hay que reiniciar turnos.
+            if (cantSubiendo === 0 && cantBajando === 0) {
+                if (espSubiendo.length > 0 && espBajando.length === 0) {
+                    consecSubiendo = 0; // Vía libre arriba, reseteamos para otra tanda de 15
+                } else if (espBajando.length > 0 && espSubiendo.length === 0) {
+                    consecBajando = 0; // Vía libre abajo, reseteamos
+                } else if (espSubiendo.length === 0 && espBajando.length === 0) {
+                    consecSubiendo = 0;
+                    consecBajando = 0;
+                }
+            }
+
+            // REGLA ESTRICTA: Solo pueden entrar si el contador está por debajo de 15.
+            let puedeSubir = (cantBajando === 0) && (espSubiendo.length > 0) && (consecSubiendo < 15) && (cantSubiendo < 15);
+            let puedeBajar = (cantSubiendo === 0) && (espBajando.length > 0) && (consecBajando < 15) && (cantBajando < 15);
+
+            // Desempate por si la pista está vacía y ambos tienen autos en fila:
+            if (puedeSubir && puedeBajar) {
+                if (consecSubiendo > 0) puedeBajar = false; 
+                else if (consecBajando > 0) puedeSubir = false; 
+                else puedeBajar = false; 
+            }
+
+            if (puedeSubir) {
+                const auto = espSubiendo.shift();
+                cantSubiendo++;
+                consecSubiendo++; // El conteo consecutivo SUMA AL ENTRAR a la pista.
+                consecBajando = 0; 
+                iniciarTransito(auto);
+                logEvent(`🟢 Auto #${auto.id} [SUBIENDO] entra a la pista. (Ráfaga: ${consecSubiendo}/15)`, 'log-up');
+                
+                if (consecSubiendo === 15) {
+                    logEvent(`⚠️ [CORTE] Han entrado 15 autos a SUBIR. Semáforo en ROJO.`, 'log-warn');
+                }
+                
+                ingresoBloqueado = true;
+                setTimeout(() => { ingresoBloqueado = false; evaluarPaso(); }, 600);
+
+            } else if (puedeBajar) {
+                const auto = espBajando.shift();
+                cantBajando++;
+                consecBajando++; // El conteo consecutivo SUMA AL ENTRAR a la pista.
+                consecSubiendo = 0; 
+                iniciarTransito(auto);
+                logEvent(`🟢 Auto #${auto.id} [BAJANDO] entra a la pista. (Ráfaga: ${consecBajando}/15)`, 'log-down');
+                
+                if (consecBajando === 15) {
+                    logEvent(`⚠️ [CORTE] Han entrado 15 autos a BAJAR. Semáforo en ROJO.`, 'log-warn');
+                }
+
+                ingresoBloqueado = true;
+                setTimeout(() => { ingresoBloqueado = false; evaluarPaso(); }, 600);
+            }
+
+            actualizarUI();
+        }
+
+        // --- Visualización y Animación ---
+        function iniciarTransito(auto) {
+            const track = document.getElementById('roadTrack');
+            const elem = document.createElement('div');
+            
+            elem.className = `car-sprite ${auto.direccion === 'SUBIR' ? 'up' : 'down'}`;
+            elem.id = `car-elem-${auto.id}`;
+            elem.innerHTML = `<span>${auto.direccion === 'SUBIR' ? '⬆️' : '⬇️'}</span><span style="font-size:0.65rem;">#${auto.id}</span>`;
+
+            track.appendChild(elem);
+
+            const startY = auto.direccion === 'SUBIR' ? 270 : 0;
+            const endY = auto.direccion === 'SUBIR' ? 0 : 270;
+            elem.style.transform = `translateY(${startY}px)`;
+
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / tiempoCruceMs, 1);
+                const currentY = startY + (endY - startY) * progress;
+
+                elem.style.transform = `translateY(${currentY}px)`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    finalizarTransito(auto, elem);
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function finalizarTransito(auto, elem) {
+            if (elem && elem.parentNode) {
+                elem.parentNode.removeChild(elem);
+            }
+
+            if (auto.direccion === 'SUBIR') cantSubiendo--;
+            else cantBajando--;
+
+            logEvent(`🏁 Auto #${auto.id} salió del tramo.`, auto.direccion === 'SUBIR' ? 'log-up' : 'log-down');
+            evaluarPaso(); 
+        }
+
+        function renderizarColasVisuales() {
+            const qUp = document.getElementById('visualQueueUp');
+            const qDown = document.getElementById('visualQueueDown');
+
+            qUp.innerHTML = espSubiendo.length === 0 
+                ? '<span class="visual-queue-empty">Sin autos en espera</span>' 
+                : espSubiendo.map(a => `<div class="queued-car up" title="Auto #${a.id} esperando">#${a.id}</div>`).join('');
+
+            qDown.innerHTML = espBajando.length === 0 
+                ? '<span class="visual-queue-empty">Sin autos en espera</span>' 
+                : espBajando.map(a => `<div class="queued-car down" title="Auto #${a.id} esperando">#${a.id}</div>`).join('');
+        }
+
+        function actualizarUI() {
+            document.getElementById('valEspSubiendo').innerText = espSubiendo.length;
+            document.getElementById('valEspBajando').innerText = espBajando.length;
+            document.getElementById('valAutosEnTramo').innerText = cantSubiendo + cantBajando;
+
+            let sentidoText = 'NINGUNO';
+            if (cantSubiendo > 0) sentidoText = 'SUBIENDO ⬆️';
+            else if (cantBajando > 0) sentidoText = 'BAJANDO ⬇️';
+            document.getElementById('valSentidoActivo').innerText = sentidoText;
+
+            document.getElementById('valConsecSubiendo').innerText = `${consecSubiendo} / 15`;
+            document.getElementById('valConsecBajando').innerText = `${consecBajando} / 15`;
+
+            const lightUp = document.getElementById('lightUp');
+            const lightDown = document.getElementById('lightDown');
+
+            const puedeSubirAhora = (cantBajando === 0) && (consecSubiendo < 15);
+            const puedeBajarAhora = (cantSubiendo === 0) && (consecBajando < 15);
+
+            lightUp.className = (cantSubiendo > 0 || puedeSubirAhora) && consecSubiendo < 15 && cantBajando === 0 ? 'light green' : 'light red';
+            lightDown.className = (cantBajando > 0 || puedeBajarAhora) && consecBajando < 15 && cantSubiendo === 0 ? 'light green' : 'light red';
+
+            renderizarColasVisuales();
+        }
+
+        function actualizarVelocidad(val) {
+            tiempoCruceMs = parseFloat(val) * 1000;
+            document.getElementById('speedVal').innerText = val;
+        }
+
+        function logEvent(msg, typeClass = 'log-system') {
+            const logBox = document.getElementById('logBox');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${typeClass}`;
+            entry.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function reiniciarSimulacion() {
+            cantSubiendo = 0; cantBajando = 0;
+            espSubiendo = []; espBajando = [];
+            consecSubiendo = 0; consecBajando = 0;
+            autoIdCounter = 1; ingresoBloqueado = false;
+
+            document.getElementById('roadTrack').querySelectorAll('.car-sprite').forEach(el => el.remove());
+            document.getElementById('logBox').innerHTML = '';
+            logEvent('🔄 Simulación reiniciada.', 'log-system');
+            actualizarUI();
+        }
+
+        logEvent('🚀 Sistema inicializado. Semáforos configurados para corte estricto en 15 autos.', 'log-system');
+        actualizarUI();
+    </script>
+</body>
+</html>
